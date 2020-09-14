@@ -51,6 +51,9 @@ func _physics_process(delta):
 		add_child(ball) # mandatory after instance creation
 		init_ball()
 
+func _input(event):
+	if event.is_action_pressed("menu"):
+		get_tree().change_scene("res://mainMenu.tscn")
 
 # arrow appears when ball leaves screen
 func draw_ball_pointer_at(x):
