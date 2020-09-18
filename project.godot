@@ -24,6 +24,10 @@ config/name="BV3"
 run/main_scene="res://mainScene.tscn"
 config/icon="res://icon.png"
 
+[autoload]
+
+Globals="*res://globals.gd"
+
 [gdnative]
 
 singletons=[ "res://git_api.gdnlib" ]
