@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=2]
+
+[sub_resource type="RectangleShape2D" id=1]
+extents = Vector2( 10, 90.093 )
+
+[node name="Barier" type="RigidBody2D"]
+light_mask = -2147483648
+position = Vector2( 0, -190 )
+collision_layer = 0
+collision_mask = 0
+mode = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource( 1 )
