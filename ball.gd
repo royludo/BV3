@@ -1,7 +1,7 @@
 extends RigidBody2D
 
 const BALL_START_POS_P1 : Vector2 = Vector2(330,360)
-const BALL_START_POS_P2 : Vector2 = Vector2(630,360)
+const BALL_START_POS_P2 : Vector2 = Vector2(730,360)
 
 onready var last_transform = get_transform()
 onready var last_linear_velocity = get_linear_velocity()

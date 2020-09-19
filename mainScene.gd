@@ -110,7 +110,7 @@ func draw_ball_pointer_at(x):
 
 func destroy_and_reset_ball_at(player):
 	ball.queue_free() # destroy instance
-	reset_score()
+	reset_touch_count()
 	create_ball_at(player)
 
 # forward collision detection from the ball to the mainScene
@@ -119,7 +119,7 @@ func init_ball():
 
 func create_ball_at(player):
 	ball = ball_scene.instance()
-	ball.constructor(Globals.Player.P1)
+	ball.constructor(player)
 	add_child(ball) # mandatory after instance creation
 	init_ball()
 
@@ -137,16 +137,19 @@ func process_ball_collision(body):
 	if body is TileMap and body.get_name() == "TileMapGround":
 		# determine side where ball touched ground from its coords
 		var side
+		var other_side
 		if ball.position.x < 512:
 			side = Globals.Player.P1
+			other_side = Globals.Player.P2
 			score_P2 += 1
 		else:
 			side = Globals.Player.P2
+			other_side = Globals.Player.P1
 			score_P1 += 1
 			
 		print("Touched ground on side: " + str(Globals.Player.keys()[side]))
 		update_score()
-		call_deferred("destroy_and_reset_ball_at", last_player_touching)
+		call_deferred("destroy_and_reset_ball_at", other_side)
 		
 	if body is KinematicBody2D:
 		# check player exceeding their touch limits
@@ -179,7 +182,7 @@ func process_ball_collision(body):
 		"next_player: " + str(Globals.Player.keys()[next_player]) + " " +\
 		str(touch_count_P1) + " " + str(touch_count_P2))
 
-func reset_score():
+func reset_touch_count():
 	touch_count_P1 = 0
 	touch_count_P2 = 0
 
