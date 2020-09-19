@@ -185,9 +185,15 @@ func reset_score():
 	touch_count_P1 = 0
 	touch_count_P2 = 0
 
+puppet func update_score_remote(score1, score2):
+	$ScoreP1.set_text(str(score1))
+	$ScoreP2.set_text(str(score2))
+
 func update_score():
 	$ScoreP1.set_text(str(score_P1))
 	$ScoreP2.set_text(str(score_P2))
+	if Globals.is_online_multi and get_tree().is_network_server():
+		rpc("update_score_remote", score_P1, score_P2)
 
 func _input(event):
 	if event.is_action_pressed("menu"):
