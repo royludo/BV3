@@ -100,9 +100,7 @@ func process_ball(delta):
 
 puppet func set_ball_position(transform:Transform2D, linearVelocity:Vector2,\
 angularVelocity):
-	ball.set_transform(transform)
-	ball.set_linear_velocity(linearVelocity)
-	ball.set_angular_velocity(angularVelocity)
+	ball.set_last_variables(transform, linearVelocity, angularVelocity)
 
 # arrow appears when ball leaves screen
 func draw_ball_pointer_at(x):
