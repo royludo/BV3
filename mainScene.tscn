@@ -1,6 +1,7 @@
-[gd_scene load_steps=11 format=2]
+[gd_scene load_steps=12 format=2]
 
 [ext_resource path="res://assets/sand.png" type="Texture" id=1]
+[ext_resource path="res://poleBarrier.tscn" type="PackedScene" id=2]
 [ext_resource path="res://ball.tscn" type="PackedScene" id=3]
 [ext_resource path="res://pole.tscn" type="PackedScene" id=4]
 [ext_resource path="res://mainScene.gd" type="Script" id=5]
@@ -145,6 +146,10 @@ points = PoolVector2Array( 64, 64, 0, 64, 0, 0, 64, 0 )
 
 [node name="mainScene" type="Node2D"]
 script = ExtResource( 5 )
+
+[node name="polePBarrier" parent="." instance=ExtResource( 2 )]
+position = Vector2( 512, 230 )
+collision_layer = 2147483656
 
 [node name="TileMap" type="TileMap" parent="."]
 tile_set = SubResource( 5 )
