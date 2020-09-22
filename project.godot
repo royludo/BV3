@@ -9,13 +9,25 @@
 config_version=4
 
 _global_script_classes=[ {
+"base": "RigidBody2D",
+"class": "Ball",
+"language": "GDScript",
+"path": "res://ball.gd"
+}, {
 "base": "",
 "class": "GitAPI",
 "language": "NativeScript",
 "path": "res://git_api.gdns"
+}, {
+"base": "KinematicBody2D",
+"class": "Player",
+"language": "GDScript",
+"path": "res://blobby.gd"
 } ]
 _global_script_class_icons={
-"GitAPI": ""
+"Ball": "",
+"GitAPI": "",
+"Player": ""
 }
 
 [application]

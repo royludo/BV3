@@ -1,14 +1,23 @@
 extends KinematicBody2D
+class_name Player
 
 const WALK_FORCE = 500
 const JUMP_FORCE = 850
+
+# defaults values
+var player_team = Globals.Team.TEAM_LEFT
+var player_name = "Player 1"
  
-onready var gravity = ProjectSettings.get_setting("physics/2d/default_gravity") * 15
+onready var gravity = ProjectSettings.get_setting("physics/2d/default_gravity") * 20
  
 var velocity = Vector2()
 
 puppet func setPosition(pos:Vector2):
 	set_position(pos)
+	
+func constructor(player_name, player_team):
+	self.player_name = player_name
+	self.player_team = player_team
  
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _physics_process(delta):

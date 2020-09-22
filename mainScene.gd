@@ -5,65 +5,61 @@ var ball_scene = load("res://ball.tscn")
 var ball:RigidBody2D
 var ball_y_size:int
 var arrow:Node2D
-const BALL_MAX_SPEED:int = 1000
-const P1_START_POS:Vector2 = Vector2(200,400) 
-const P2_START_POS:Vector2 = Vector2(800,400)
+const TEAM_LEFT_PLAYER_START_POS:Vector2 = Vector2(200,400) 
+const TEAM_RIGHT_PLAYER_START_POS:Vector2 = Vector2(800,400)
 
-var touch_count_P1:int = 0
-var touch_count_P2:int = 0
-var P1_blobby:KinematicBody2D
-var P2_blobby:KinematicBody2D
-var last_player_touching
-var next_player
-var score_P1 = 0
-var score_P2 = 0
+var touch_count_team_left:int = 0
+var touch_count_team_right:int = 0
+var last_team_touching
+var score_team_left = 0
+var score_team_right = 0
+var is_end_play = false
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	
 	#get and init ball object
 	ball = get_node("ball")
 	ball_y_size = ceil(get_node("ball/CollisionShape2D").shape.get_radius())
-	init_ball()
-	
+	ball.connect("body_entered", self, "_on_ball_collision")
 	arrow = get_node("ball_arrow")
+	
+	for pc in range(Globals.player_count):
+		var p = preload("res://blobby.tscn").instance() as Player
+		p.player_name = "Player " + str(pc)
+		if pc >= Globals.player_count/2:
+			p.player_team = Globals.Team.TEAM_RIGHT
+		Globals.Players.push_back(p)	
 	
 	## init players ##
 	if Globals.is_online_multi:
-		var my_player = preload("res://blobby.tscn").instance()
-		my_player.set_name(str(get_tree().get_network_unique_id()))
-		my_player.set_network_master(get_tree().get_network_unique_id())
-		add_child(my_player)
+		Globals.Players[0].set_name(str(get_tree().get_network_unique_id()))
+		Globals.Players[0].set_network_master(get_tree().get_network_unique_id())
+		add_child(Globals.Players[0])
 		
-		var other_player = preload("res://blobby.tscn").instance()
-		other_player.set_name(str(Globals.otherPlayerId))
-		other_player.set_network_master(Globals.otherPlayerId)
-		add_child(other_player)
+		Globals.Players[1].set_name(str(Globals.otherPlayerId))
+		Globals.Players[1].set_network_master(Globals.otherPlayerId)
+		add_child(Globals.Players[1])
 		
 		if get_tree().is_network_server():
-			P1_blobby = my_player
-			my_player.set_position(P1_START_POS)
-			P2_blobby = other_player
-			other_player.set_position(P2_START_POS)
+			Globals.Players[0].set_position(TEAM_RIGHT_PLAYER_START_POS)
+			Globals.Players[1].set_position(TEAM_LEFT_PLAYER_START_POS)
 		else:
-			P2_blobby = my_player
-			my_player.set_position(P2_START_POS)
-			P1_blobby = other_player
-			other_player.set_position(P1_START_POS)
+			Globals.Players[0].set_position(TEAM_LEFT_PLAYER_START_POS)
+			Globals.Players[1].set_position(TEAM_RIGHT_PLAYER_START_POS)
 		
-		print("Created player for local with id: " + str(my_player.get_name()) + \
-		" and player for remote with id: " + str(other_player.get_name()))
+		print("Created player for local with id: " + str(Globals.Players[0].get_name()) + \
+		" and player for remote with id: " + str(Globals.Players[1].get_name()))
 	else:
-		var player = preload("res://blobby.tscn").instance()
-		player.set_name("blobby")
-		P1_blobby = player
-		player.set_position(P1_START_POS)
-		add_child(player)
-	
+		print(Globals.Players)
+		Globals.Players[0].set_position(TEAM_LEFT_PLAYER_START_POS)
+		Globals.Players[1].set_position(TEAM_RIGHT_PLAYER_START_POS)
+		add_child(Globals.Players[0])
+		add_child(Globals.Players[1])
+	Globals.Players[0].player_team = Globals.Team.TEAM_LEFT
+	Globals.Players[1].player_team = Globals.Team.TEAM_RIGHT
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
-	
 	# arrow indicator condition
 	if ball.get_position().y < -ball_y_size:
 		draw_ball_pointer_at(ball.get_position().x)
@@ -84,19 +80,20 @@ func _physics_process(delta):
 	
 
 func process_ball(delta):
-	# we need to cap the ball's max speed, it can go way too fast otherwise,
-	# it's unmanageable for the player
-	if abs(ball.get_linear_velocity().x) > BALL_MAX_SPEED \
-	or abs(ball.get_linear_velocity().y) > BALL_MAX_SPEED:
-		var new_speed = ball.get_linear_velocity().normalized()
-		new_speed *= BALL_MAX_SPEED
-		ball.set_linear_velocity(new_speed)
-		
 	# check if ball has glitched out of screen
 	if ball.get_position().x < 0 \
 	or ball.get_position().x > get_viewport().size.x \
 	or ball.get_position().y > get_viewport().size.y:
-		destroy_and_reset_ball_at(Globals.Player.P1)
+		reset_play(Globals.Team.TEAM_LEFT)
+	
+	# we need to cap the ball's max speed, it can go way too fast otherwise,
+	# it's unmanageable for the player
+	elif abs(ball.get_linear_velocity().x) > ball.BALL_MAX_SPEED \
+	or abs(ball.get_linear_velocity().y) > ball.BALL_MAX_SPEED:
+		var new_speed = ball.get_linear_velocity().normalized()
+		new_speed *= ball.BALL_MAX_SPEED
+		ball.set_linear_velocity(new_speed)
+		
 
 puppet func set_ball_position(transform:Transform2D, linearVelocity:Vector2,\
 angularVelocity):
@@ -108,20 +105,16 @@ func draw_ball_pointer_at(x):
 	arrow.set_visible(true)
 	pass
 
-func destroy_and_reset_ball_at(player):
+func reset_play(side):
 	ball.queue_free() # destroy instance
-	reset_touch_count()
-	create_ball_at(player)
-
-# forward collision detection from the ball to the mainScene
-func init_ball():
-	ball.connect("body_entered", self, "_on_ball_collision")
-
-func create_ball_at(player):
+	touch_count_team_left = 0
+	touch_count_team_right = 0
 	ball = ball_scene.instance()
-	ball.constructor(player)
+	ball.constructor(side)
 	add_child(ball) # mandatory after instance creation
-	init_ball()
+	# forward collision detection from the ball to the mainScene
+	ball.connect("body_entered", self, "_on_ball_collision")
+	is_end_play = false
 
 # redirected signal from the ball to here
 func _on_ball_collision(body):
@@ -133,68 +126,70 @@ func _on_ball_collision(body):
 		process_ball_collision(body)
 	
 func process_ball_collision(body):
+	if is_end_play:
+		return
 	print("collision with: " + str(body.get_name()))
+	var other_team
 	if body is TileMap and body.get_name() == "TileMapGround":
 		# determine side where ball touched ground from its coords
 		var side
-		var other_side
 		if ball.position.x < 512:
-			side = Globals.Player.P1
-			other_side = Globals.Player.P2
-			score_P2 += 1
+			side = Globals.Team.TEAM_LEFT
+			other_team = Globals.Team.TEAM_RIGHT
+			score_team_right += 1
 		else:
-			side = Globals.Player.P2
-			other_side = Globals.Player.P1
-			score_P1 += 1
-			
-		print("Touched ground on side: " + str(Globals.Player.keys()[side]))
-		update_score()
-		call_deferred("destroy_and_reset_ball_at", other_side)
-		
-	if body is KinematicBody2D:
-		# check player exceeding their touch limits
-		if touch_count_P1 >= 3:
-			call_deferred("destroy_and_reset_ball_at", Globals.Player.P2)
-			touch_count_P1 = 0
-			score_P2 += 1
-			update_score()
-		
-		if touch_count_P2 >= 3:
-			call_deferred("destroy_and_reset_ball_at", Globals.Player.P1)
-			touch_count_P2 = 0
-			score_P1 += 1
-			update_score()
+			side = Globals.Team.TEAM_RIGHT
+			other_team = Globals.Team.TEAM_LEFT
+			score_team_left += 1
+		print("Touched ground on side: " + str(Globals.Team.keys()[side]))
+	elif body is KinematicBody2D:
+		var player := body as Player
 		
 		# update who touched the ball and increment touch count
-		if body == P1_blobby:
-			last_player_touching = Globals.Player.P1
-			next_player = Globals.Player.P2
-			touch_count_P1 += 1
-			touch_count_P2 = 0
+		last_team_touching = player.player_team
+		if player.player_team == Globals.Team.TEAM_LEFT:
+			other_team = Globals.Team.TEAM_RIGHT
+			if touch_count_team_left == 3:
+				print("more than 3 touch TEAM_LEFT")
+				touch_count_team_left = 0
+				score_team_right += 1
+			else:
+				touch_count_team_left += 1
+				touch_count_team_right = 0
+				return
 		else:
-			last_player_touching = Globals.Player.P2
-			next_player = Globals.Player.P1
-			touch_count_P2 += 1
-			touch_count_P1 = 0
+			other_team = Globals.Team.TEAM_LEFT
+			if touch_count_team_right == 3:
+				print("more than 3 touch TEAM_RIGHT")
+				touch_count_team_right = 0
+				score_team_left += 1
+			else:
+				touch_count_team_right += 1
+				touch_count_team_left = 0
+				return
+	else:
+		return
 		
-		print("last player touching: " + \
-		str(Globals.Player.keys()[last_player_touching]) + " " + \
-		"next_player: " + str(Globals.Player.keys()[next_player]) + " " +\
-		str(touch_count_P1) + " " + str(touch_count_P2))
+	update_score()
+	is_end_play = true
+	ball.set_collision_mask_bit(1, false)
+	ball.physics_material_override.bounce = 0.3
+	yield(get_tree().create_timer(2.0), "timeout")
+	call_deferred("reset_play", other_team)
 
-func reset_touch_count():
-	touch_count_P1 = 0
-	touch_count_P2 = 0
+	print("last team touching: " + \
+	str(Globals.Team.keys()[last_team_touching]) + " " + \
+	str(touch_count_team_left) + " " + str(touch_count_team_right))
 
-puppet func update_score_remote(score1, score2):
-	$ScoreP1.set_text(str(score1))
-	$ScoreP2.set_text(str(score2))
+puppet func update_score_remote(score_left, score_right):
+	$ScoreTeamLeft.set_text(str(score_left))
+	$ScoreTeamRight.set_text(str(score_right))
 
 func update_score():
-	$ScoreP1.set_text(str(score_P1))
-	$ScoreP2.set_text(str(score_P2))
+	$ScoreTeamLeft.set_text(str(score_team_left))
+	$ScoreTeamRight.set_text(str(score_team_right))
 	if Globals.is_online_multi and get_tree().is_network_server():
-		rpc("update_score_remote", score_P1, score_P2)
+		rpc("update_score_remote", score_team_left, score_team_right)
 
 func _input(event):
 	if event.is_action_pressed("menu"):

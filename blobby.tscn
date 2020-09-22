@@ -12,7 +12,7 @@ height = 21.481
 
 [node name="blobby" type="KinematicBody2D"]
 collision_layer = 2
-collision_mask = 13
+collision_mask = 9
 script = ExtResource( 1 )
 __meta__ = {
 "_edit_group_": true
