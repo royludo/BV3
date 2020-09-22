@@ -2,9 +2,9 @@ extends Node2D
 
 
 var ball_scene = load("res://ball.tscn")
-var ball:RigidBody2D
-var ball_y_size:int
-var arrow:Node2D
+onready var ball:RigidBody2D = $ball
+onready var ball_y_size:int = ceil($ball/CollisionShape2D.shape.get_radius())
+onready var arrow:Node2D = $ball_arrow
 const TEAM_LEFT_PLAYER_START_POS:Vector2 = Vector2(200,400) 
 const TEAM_RIGHT_PLAYER_START_POS:Vector2 = Vector2(800,400)
 
@@ -17,18 +17,15 @@ var is_end_play = false
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	#get and init ball object
-	ball = get_node("ball")
-	ball_y_size = ceil(get_node("ball/CollisionShape2D").shape.get_radius())
 	ball.connect("body_entered", self, "_on_ball_collision")
-	arrow = get_node("ball_arrow")
 	
+	Globals.Players.clear()
 	for pc in range(Globals.player_count):
 		var p = preload("res://blobby.tscn").instance() as Player
 		p.player_name = "Player " + str(pc)
 		if pc >= Globals.player_count/2:
 			p.player_team = Globals.Team.TEAM_RIGHT
-		Globals.Players.push_back(p)	
+		Globals.Players.push_back(p)
 	
 	## init players ##
 	if Globals.is_online_multi:
@@ -43,9 +40,13 @@ func _ready():
 		if get_tree().is_network_server():
 			Globals.Players[0].set_position(TEAM_RIGHT_PLAYER_START_POS)
 			Globals.Players[1].set_position(TEAM_LEFT_PLAYER_START_POS)
+			Globals.Players[1].player_team = Globals.Team.TEAM_LEFT
+			Globals.Players[0].player_team = Globals.Team.TEAM_RIGHT
 		else:
 			Globals.Players[0].set_position(TEAM_LEFT_PLAYER_START_POS)
 			Globals.Players[1].set_position(TEAM_RIGHT_PLAYER_START_POS)
+			Globals.Players[0].player_team = Globals.Team.TEAM_LEFT
+			Globals.Players[1].player_team = Globals.Team.TEAM_RIGHT
 		
 		print("Created player for local with id: " + str(Globals.Players[0].get_name()) + \
 		" and player for remote with id: " + str(Globals.Players[1].get_name()))
@@ -55,8 +56,8 @@ func _ready():
 		Globals.Players[1].set_position(TEAM_RIGHT_PLAYER_START_POS)
 		add_child(Globals.Players[0])
 		add_child(Globals.Players[1])
-	Globals.Players[0].player_team = Globals.Team.TEAM_LEFT
-	Globals.Players[1].player_team = Globals.Team.TEAM_RIGHT
+		Globals.Players[0].player_team = Globals.Team.TEAM_LEFT
+		Globals.Players[1].player_team = Globals.Team.TEAM_RIGHT
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
@@ -103,7 +104,6 @@ angularVelocity):
 func draw_ball_pointer_at(x):
 	arrow.set_position(Vector2(x, 10))
 	arrow.set_visible(true)
-	pass
 
 func reset_play(side):
 	ball.queue_free() # destroy instance
@@ -173,13 +173,14 @@ func process_ball_collision(body):
 	update_score()
 	is_end_play = true
 	ball.set_collision_mask_bit(1, false)
-	ball.physics_material_override.bounce = 0.3
+	#ball.physics_material_override.bounce = 0.3
 	yield(get_tree().create_timer(2.0), "timeout")
 	call_deferred("reset_play", other_team)
 
-	print("last team touching: " + \
-	str(Globals.Team.keys()[last_team_touching]) + " " + \
-	str(touch_count_team_left) + " " + str(touch_count_team_right))
+	# VVVV    dangerous! do not uncomment!     VVVV
+	#print("last team touching: " + \
+	#str(Globals.Team.keys()[last_team_touching]) + " " + \
+	#str(touch_count_team_left) + " " + str(touch_count_team_right))
 
 puppet func update_score_remote(score_left, score_right):
 	$ScoreTeamLeft.set_text(str(score_left))
