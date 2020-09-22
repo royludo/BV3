@@ -9,15 +9,20 @@ var player_team = Globals.Team.TEAM_LEFT
 var player_name = "Player 1"
  
 onready var gravity = ProjectSettings.get_setting("physics/2d/default_gravity") * 20
+var default_shader = preload("res://blobby_shader.tres")
  
 var velocity = Vector2()
 
 puppet func setPosition(pos:Vector2):
 	set_position(pos)
 	
-func constructor(player_name, player_team):
-	self.player_name = player_name
-	self.player_team = player_team
+func constructor(name, team):
+	self.player_name = name
+	self.player_team = team
+	#print("constructor: " + str(player_name) + " " + str(player_team)+" "+str(Globals.TeamColor[player_team]))
+	#print(str(default_shader))
+	$Sprite.material = default_shader.duplicate()
+	$Sprite.material.set_shader_param("color", Globals.TeamColor[player_team])
  
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _physics_process(delta):

@@ -22,10 +22,16 @@ func _ready():
 	Globals.Players.clear()
 	for pc in range(Globals.player_count):
 		var p = preload("res://blobby.tscn").instance() as Player
-		p.player_name = "Player " + str(pc)
+		var name = "Player " + str(pc)
+		var team = Globals.Team.TEAM_LEFT
 		if pc >= Globals.player_count/2:
-			p.player_team = Globals.Team.TEAM_RIGHT
+			team = Globals.Team.TEAM_RIGHT
+		#print(str(pc)+" "+str(name)+" "+str(team))
+		p.constructor(name, team)
 		Globals.Players.push_back(p)
+	
+	# above doesn't work, players need to be created and correctly assigned 
+	# to teams in constructor, once we know who is who on the network
 	
 	## init players ##
 	if Globals.is_online_multi:
