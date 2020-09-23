@@ -53,11 +53,13 @@ func _ready():
 			Globals.players[1].set_position(TEAM_LEFT_PLAYER_START_POS)
 			Globals.players[1].player_team = Globals.Teams.TEAM_LEFT
 			Globals.players[0].player_team = Globals.Teams.TEAM_RIGHT
+			last_body_touch = Globals.players[0]
 		else:
 			Globals.players[0].set_position(TEAM_LEFT_PLAYER_START_POS)
 			Globals.players[1].set_position(TEAM_RIGHT_PLAYER_START_POS)
 			Globals.players[0].player_team = Globals.Teams.TEAM_LEFT
 			Globals.players[1].player_team = Globals.Teams.TEAM_RIGHT
+			last_body_touch = Globals.players[1]
 		
 		print("Created player for local with id: " + str(Globals.players[0].get_name()) + \
 				" and player for remote with id: " + str(Globals.players[1].get_name()))
@@ -82,13 +84,13 @@ func _process(delta):
 
 func _physics_process(delta):
 	delta_count += 1
-	if Globals.is_online_multi:
-		if get_tree().is_network_server():
-			process_ball(delta)
-			rpc_unreliable("set_ball_position", ball.get_transform(), \
-			ball.linear_velocity, ball.angular_velocity)
-	else:
-		process_ball(delta)
+#	if Globals.is_online_multi:
+#		if get_tree().is_network_server():
+#			process_ball(delta)
+#			rpc_unreliable("set_ball_position", ball.get_transform(), \
+#			ball.linear_velocity, ball.angular_velocity)
+#	else:
+	process_ball(delta)
 	
 
 func process_ball(delta):
@@ -107,9 +109,10 @@ func process_ball(delta):
 		ball.set_linear_velocity(new_speed)
 		
 
-puppet func set_ball_position(transform:Transform2D, linearVelocity:Vector2,\
+sync func set_ball_position(transform:Transform2D, linearVelocity:Vector2,\
 angularVelocity):
 	ball.set_last_variables(transform, linearVelocity, angularVelocity)
+	pass
 
 # arrow appears when ball leaves screen
 func draw_ball_pointer_at(x):
@@ -130,9 +133,14 @@ func reset_play(side):
 # redirected signal from the ball to here
 func _on_ball_collision(body):
 	if Globals.is_online_multi:
-		if get_tree().is_network_server():
-			process_ball_collision(body)
-			# rpc_unreliable("set_ball_position", ball.get_transform())
+#		if get_tree().is_network_server():
+#			process_ball_collision(body)
+#			# rpc_unreliable("set_ball_position", ball.get_transform())
+#			rpc_unreliable("set_ball_position", ball.get_transform(), \
+#			ball.linear_velocity, ball.angular_velocity)
+		process_ball_collision(body)
+		#rpc_unreliable("set_ball_position", ball.get_transform(), \
+		#ball.linear_velocity, ball.angular_velocity)
 	else:
 		process_ball_collision(body)
 	
@@ -141,6 +149,12 @@ func process_ball_collision(body):
 		return
 	print("collision with: " + str(body.get_name()))
 	var other_team
+	
+	if last_body_touch.is_network_master():
+		print("I am " + str(get_tree().get_network_unique_id()) + " update ball pos")
+		rpc_unreliable("set_ball_position", ball.get_transform(), \
+		ball.linear_velocity, ball.angular_velocity)
+			
 	if body is TileMap and body.get_name() == "TileMapGround":
 		# determine side where ball touched ground from its coords
 		var side
