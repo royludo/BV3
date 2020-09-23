@@ -1,11 +1,11 @@
 extends RigidBody2D
 class_name Ball
 
-const BALL_MAX_SPEED:int = 1000
+var BALL_MAX_SPEED:int = 1000
 
 var ball_start_pos = {
-	Globals.Team.TEAM_LEFT: Vector2(330,360),
-	Globals.Team.TEAM_RIGHT: Vector2(730,360)
+	Globals.Teams.TEAM_LEFT: Vector2(330,360),
+	Globals.Teams.TEAM_RIGHT: Vector2(730,360)
 }
 
 onready var last_transform = get_transform()

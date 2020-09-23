@@ -8,62 +8,66 @@ onready var arrow:Node2D = $ball_arrow
 const TEAM_LEFT_PLAYER_START_POS:Vector2 = Vector2(200,400) 
 const TEAM_RIGHT_PLAYER_START_POS:Vector2 = Vector2(800,400)
 
+var TOO_CLOSE_COLLISION_FRAMES = 10
+var X_COORD_MIDDLE_FIELD = 512
+var MAX_TEAM_BALL_TOUCHES = 3
+var END_PLAY_WAIT_TIME = 2.0
+
 var touch_count_team_left:int = 0
 var touch_count_team_right:int = 0
 var last_team_touching
 var score_team_left = 0
 var score_team_right = 0
 var is_end_play = false
+var delta_count = 0
+var last_body_touch
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	ball.connect("body_entered", self, "_on_ball_collision")
 	
-	Globals.Players.clear()
+	Globals.players.clear()
 	for pc in range(Globals.player_count):
 		var p = preload("res://blobby.tscn").instance() as Player
 		var name = "Player " + str(pc)
-		var team = Globals.Team.TEAM_LEFT
+		var team = Globals.Teams.TEAM_LEFT
 		if pc >= Globals.player_count/2:
-			team = Globals.Team.TEAM_RIGHT
-		#print(str(pc)+" "+str(name)+" "+str(team))
-		p.constructor(name, team)
-		Globals.Players.push_back(p)
-	
-	# above doesn't work, players need to be created and correctly assigned 
-	# to teams in constructor, once we know who is who on the network
+			team = Globals.Teams.TEAM_RIGHT
+		# print(str(pc)+" "+str(name)+" "+str(team))
+		print()
+		p.constructor(name, team, Globals.player_colors[pc])
+		Globals.players.push_back(p)
 	
 	## init players ##
 	if Globals.is_online_multi:
-		Globals.Players[0].set_name(str(get_tree().get_network_unique_id()))
-		Globals.Players[0].set_network_master(get_tree().get_network_unique_id())
-		add_child(Globals.Players[0])
+		Globals.players[0].set_name(str(get_tree().get_network_unique_id()))
+		Globals.players[0].set_network_master(get_tree().get_network_unique_id())
+		add_child(Globals.players[0])
 		
-		Globals.Players[1].set_name(str(Globals.otherPlayerId))
-		Globals.Players[1].set_network_master(Globals.otherPlayerId)
-		add_child(Globals.Players[1])
+		Globals.players[1].set_name(str(Globals.otherPlayerId))
+		Globals.players[1].set_network_master(Globals.otherPlayerId)
+		add_child(Globals.players[1])
 		
 		if get_tree().is_network_server():
-			Globals.Players[0].set_position(TEAM_RIGHT_PLAYER_START_POS)
-			Globals.Players[1].set_position(TEAM_LEFT_PLAYER_START_POS)
-			Globals.Players[1].player_team = Globals.Team.TEAM_LEFT
-			Globals.Players[0].player_team = Globals.Team.TEAM_RIGHT
+			Globals.players[0].set_position(TEAM_RIGHT_PLAYER_START_POS)
+			Globals.players[1].set_position(TEAM_LEFT_PLAYER_START_POS)
+			Globals.players[1].player_team = Globals.Teams.TEAM_LEFT
+			Globals.players[0].player_team = Globals.Teams.TEAM_RIGHT
 		else:
-			Globals.Players[0].set_position(TEAM_LEFT_PLAYER_START_POS)
-			Globals.Players[1].set_position(TEAM_RIGHT_PLAYER_START_POS)
-			Globals.Players[0].player_team = Globals.Team.TEAM_LEFT
-			Globals.Players[1].player_team = Globals.Team.TEAM_RIGHT
+			Globals.players[0].set_position(TEAM_LEFT_PLAYER_START_POS)
+			Globals.players[1].set_position(TEAM_RIGHT_PLAYER_START_POS)
+			Globals.players[0].player_team = Globals.Teams.TEAM_LEFT
+			Globals.players[1].player_team = Globals.Teams.TEAM_RIGHT
 		
-		print("Created player for local with id: " + str(Globals.Players[0].get_name()) + \
-		" and player for remote with id: " + str(Globals.Players[1].get_name()))
+		print("Created player for local with id: " + str(Globals.players[0].get_name()) + \
+				" and player for remote with id: " + str(Globals.players[1].get_name()))
 	else:
-		print(Globals.Players)
-		Globals.Players[0].set_position(TEAM_LEFT_PLAYER_START_POS)
-		Globals.Players[1].set_position(TEAM_RIGHT_PLAYER_START_POS)
-		add_child(Globals.Players[0])
-		add_child(Globals.Players[1])
-		Globals.Players[0].player_team = Globals.Team.TEAM_LEFT
-		Globals.Players[1].player_team = Globals.Team.TEAM_RIGHT
+		Globals.players[0].set_position(TEAM_LEFT_PLAYER_START_POS)
+		Globals.players[1].set_position(TEAM_RIGHT_PLAYER_START_POS)
+		add_child(Globals.players[0])
+		add_child(Globals.players[1])
+		Globals.players[0].player_team = Globals.Teams.TEAM_LEFT
+		Globals.players[1].player_team = Globals.Teams.TEAM_RIGHT
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
@@ -73,10 +77,11 @@ func _process(delta):
 	else:
 		arrow.set_visible(false)
 		
-	#print(ball.get_linear_velocity())
+	# print(ball.get_linear_velocity())
 
 
 func _physics_process(delta):
+	delta_count += 1
 	if Globals.is_online_multi:
 		if get_tree().is_network_server():
 			process_ball(delta)
@@ -91,7 +96,7 @@ func process_ball(delta):
 	if ball.get_position().x < 0 \
 	or ball.get_position().x > get_viewport().size.x \
 	or ball.get_position().y > get_viewport().size.y:
-		reset_play(Globals.Team.TEAM_LEFT)
+		reset_play(Globals.Teams.TEAM_LEFT)
 	
 	# we need to cap the ball's max speed, it can go way too fast otherwise,
 	# it's unmanageable for the player
@@ -127,7 +132,7 @@ func _on_ball_collision(body):
 	if Globals.is_online_multi:
 		if get_tree().is_network_server():
 			process_ball_collision(body)
-			#rpc_unreliable("set_ball_position", ball.get_transform())
+			# rpc_unreliable("set_ball_position", ball.get_transform())
 	else:
 		process_ball_collision(body)
 	
@@ -139,23 +144,30 @@ func process_ball_collision(body):
 	if body is TileMap and body.get_name() == "TileMapGround":
 		# determine side where ball touched ground from its coords
 		var side
-		if ball.position.x < 512:
-			side = Globals.Team.TEAM_LEFT
-			other_team = Globals.Team.TEAM_RIGHT
+		if ball.position.x < X_COORD_MIDDLE_FIELD:
+			side = Globals.Teams.TEAM_LEFT
+			other_team = Globals.Teams.TEAM_RIGHT
 			score_team_right += 1
 		else:
-			side = Globals.Team.TEAM_RIGHT
-			other_team = Globals.Team.TEAM_LEFT
+			side = Globals.Teams.TEAM_RIGHT
+			other_team = Globals.Teams.TEAM_LEFT
 			score_team_left += 1
-		print("Touched ground on side: " + str(Globals.Team.keys()[side]))
+		print("Touched ground on side: " + str(Globals.Teams.keys()[side]))
 	elif body is KinematicBody2D:
+		print(delta_count)
+		if body == last_body_touch and delta_count < TOO_CLOSE_COLLISION_FRAMES:
+			# if the same body touch the ball at too close interval
+			# ignore the hit
+			return
+		delta_count = 0
+		last_body_touch = body
 		var player := body as Player
 		
 		# update who touched the ball and increment touch count
 		last_team_touching = player.player_team
-		if player.player_team == Globals.Team.TEAM_LEFT:
-			other_team = Globals.Team.TEAM_RIGHT
-			if touch_count_team_left == 3:
+		if player.player_team == Globals.Teams.TEAM_LEFT:
+			other_team = Globals.Teams.TEAM_RIGHT
+			if touch_count_team_left == MAX_TEAM_BALL_TOUCHES:
 				print("more than 3 touch TEAM_LEFT")
 				touch_count_team_left = 0
 				score_team_right += 1
@@ -164,8 +176,8 @@ func process_ball_collision(body):
 				touch_count_team_right = 0
 				return
 		else:
-			other_team = Globals.Team.TEAM_LEFT
-			if touch_count_team_right == 3:
+			other_team = Globals.Teams.TEAM_LEFT
+			if touch_count_team_right == MAX_TEAM_BALL_TOUCHES:
 				print("more than 3 touch TEAM_RIGHT")
 				touch_count_team_right = 0
 				score_team_left += 1
@@ -178,15 +190,15 @@ func process_ball_collision(body):
 		
 	update_score()
 	is_end_play = true
-	ball.set_collision_mask_bit(1, false)
-	#ball.physics_material_override.bounce = 0.3
-	yield(get_tree().create_timer(2.0), "timeout")
+	ball.set_collision_mask_bit(1, false) # no player collision
+	ball.BALL_MAX_SPEED = 500 # slow down the ball
+	yield(get_tree().create_timer(END_PLAY_WAIT_TIME), "timeout")
 	call_deferred("reset_play", other_team)
 
 	# VVVV    dangerous! do not uncomment!     VVVV
-	#print("last team touching: " + \
-	#str(Globals.Team.keys()[last_team_touching]) + " " + \
-	#str(touch_count_team_left) + " " + str(touch_count_team_right))
+	# print("last team touching: " + \
+	# str(Globals.Team.keys()[last_team_touching]) + " " + \
+	# str(touch_count_team_left) + " " + str(touch_count_team_right))
 
 puppet func update_score_remote(score_left, score_right):
 	$ScoreTeamLeft.set_text(str(score_left))
