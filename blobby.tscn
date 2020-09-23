@@ -1,10 +1,10 @@
 [gd_scene load_steps=5 format=2]
 
 [ext_resource path="res://blobby.gd" type="Script" id=1]
-[ext_resource path="res://assets/blobby.png" type="Texture" id=2]
+[ext_resource path="res://assets/blobby_white.png" type="Texture" id=2]
 
 [sub_resource type="CircleShape2D" id=1]
-radius = 32.8508
+radius = 31.1291
 
 [sub_resource type="CapsuleShape2D" id=2]
 radius = 22.5162
@@ -12,7 +12,7 @@ height = 21.481
 
 [node name="blobby" type="KinematicBody2D"]
 collision_layer = 2
-collision_mask = 13
+collision_mask = 9
 script = ExtResource( 1 )
 __meta__ = {
 "_edit_group_": true
@@ -23,7 +23,7 @@ position = Vector2( 0.347275, 28.8203 )
 shape = SubResource( 1 )
 
 [node name="TopShape" type="CollisionShape2D" parent="."]
-position = Vector2( 0.33371, -4.0113 )
+position = Vector2( 0.347, -4.011 )
 shape = SubResource( 2 )
 
 [node name="Sprite" type="Sprite" parent="."]

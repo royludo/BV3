@@ -9,13 +9,19 @@
 config_version=4
 
 _global_script_classes=[ {
-"base": "",
-"class": "GitAPI",
-"language": "NativeScript",
-"path": "res://git_api.gdns"
+"base": "RigidBody2D",
+"class": "Ball",
+"language": "GDScript",
+"path": "res://ball.gd"
+}, {
+"base": "KinematicBody2D",
+"class": "Player",
+"language": "GDScript",
+"path": "res://blobby.gd"
 } ]
 _global_script_class_icons={
-"GitAPI": ""
+"Ball": "",
+"Player": ""
 }
 
 [application]
@@ -30,7 +36,8 @@ Globals="*res://globals.gd"
 
 [gdnative]
 
-singletons=[ "res://git_api.gdnlib" ]
+singletons=[  ]
+singletons_disabled=[  ]
 
 [input]
 
