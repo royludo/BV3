@@ -150,7 +150,7 @@ func process_ball_collision(body):
 	print("collision with: " + str(body.get_name()))
 	var other_team
 	
-	if last_body_touch.is_network_master():
+	if Globals.is_online_multi and last_body_touch.is_network_master():
 		print("I am " + str(get_tree().get_network_unique_id()) + " update ball pos")
 		rpc_unreliable("set_ball_position", ball.get_transform(), \
 		ball.linear_velocity, ball.angular_velocity)

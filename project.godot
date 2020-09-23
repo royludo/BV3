@@ -72,10 +72,6 @@ menu={
 2d_physics/layer_3="Ball"
 2d_physics/layer_4="PoleBarier"
 
-[physics]
-
-common/physics_fps=120
-
 [rendering]
 
 environment/default_environment="res://default_env.tres"
